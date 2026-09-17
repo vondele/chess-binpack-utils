@@ -15,12 +15,12 @@ use crate::error::{Error, Result};
 // https://oertl.github.io/hyperloglog-sketch-estimation-paper/paper/paper.pdf
 const BITSUSED: u32 = 20;
 struct HyperLogLog{
-    m: [u8; 1 << BITSUSED],
+    m: Vec<u8>,
 }
 impl HyperLogLog{
     fn new() -> HyperLogLog {
         HyperLogLog{
-            m: [0; 1 << BITSUSED],
+            m: vec![0; 1 << BITSUSED],
         }
     }
     fn tau(mut x: f64) -> f64{
@@ -61,7 +61,7 @@ impl HyperLogLog{
     fn count(&self) -> u64 {
         let size: u64 = (1 as u64) << BITSUSED;
         let mut c: [u32; (64-BITSUSED+2) as usize] = [0; (64-BITSUSED+2) as usize];
-        for x in self.m {
+        for &x in &self.m {
             let k:i32 = (x as i32 - BITSUSED as i32 + 1).max(0);
             c[k as usize] += 1;
         }
@@ -78,7 +78,7 @@ pub fn unique_positions_from_path(
     path: &Path,
     limit: Option<usize>,
     backend: Backend,
-) -> Result<u64> {
+) -> Result<(u64, u64)> {
     let file = File::open(path).map_err(|source| Error::Io {
         path: path.to_path_buf(),
         source,
@@ -90,14 +90,14 @@ pub fn unique_positions_from_file<T: Read + Seek>(
     file: T,
     limit: Option<usize>,
     backend: Backend,
-) -> Result<u64> {
+) -> Result<(u64, u64)> {
     match backend {
         Backend::Sfbinpack => unique_sf(file, limit),
         Backend::Viriformat => unique_viriformat(file, limit),
     }
 }
 
-fn unique_sf<T: Read + Seek>(file: T, limit: Option<usize>) -> Result<u64> {
+fn unique_sf<T: Read + Seek>(file: T, limit: Option<usize>) -> Result<(u64, u64)> {
     let mut reader = CompressedTrainingDataEntryReader::new(file)?;
     let mut position = Chess::default();
     let mut unique: HyperLogLog = HyperLogLog::new();
@@ -140,10 +140,10 @@ fn unique_sf<T: Read + Seek>(file: T, limit: Option<usize>) -> Result<u64> {
         }
     }
 
-    Ok(unique.count() as u64)
+    Ok((unique.count() as u64, count as u64))
 }
 
-fn unique_viriformat<T: Read + Seek>(file: T, limit: Option<usize>) -> Result<u64> {
+fn unique_viriformat<T: Read + Seek>(file: T, limit: Option<usize>) -> Result<(u64, u64)> {
     let mut reader = BufReader::new(file);
     let mut unique: HyperLogLog = HyperLogLog::new();
     let mut processed = 0usize;
@@ -168,7 +168,7 @@ fn unique_viriformat<T: Read + Seek>(file: T, limit: Option<usize>) -> Result<u6
 
                     processed += 1;
                     if limit.is_some_and(|limit| processed >= limit) {
-                        return Ok(unique.count() as u64);
+                        return Ok((unique.count() as u64, processed as u64));
                     }
 
                     let uci_string = mv.display(false).to_string();
@@ -195,5 +195,5 @@ fn unique_viriformat<T: Read + Seek>(file: T, limit: Option<usize>) -> Result<u6
         }
     }
 
-    Ok(unique.count() as u64)
+    Ok((unique.count() as u64, processed as u64))
 }

@@ -132,7 +132,9 @@ chess-binpack-utils convert \
 chess-binpack-utils unique --input <INPUT>
 ```
 
-This prints the number of unique positions found in the input.
+This prints the number of unique positions found in the input, in the form
+`N unique positions from a total of M`, where `M` is the total number of
+positions scanned.
 
 Supported backends:
 
