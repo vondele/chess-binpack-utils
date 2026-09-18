@@ -247,8 +247,8 @@ fn unique_command(command: UniqueCommand) -> Result<()> {
         .limit
         .map(|limit| usize::try_from(limit).map_err(|_| Error::InvalidLimit(limit)))
         .transpose()?;
-    let unique = unique::unique_positions_from_path(&command.input, limit, backend)?;
-    println!("{unique}");
+    let (unique, total) = unique::unique_positions_from_path(&command.input, limit, backend)?;
+    println!("{unique} unique positions from a total of {total}");
     Ok(())
 }
 

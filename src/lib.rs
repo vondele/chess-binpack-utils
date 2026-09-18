@@ -245,10 +245,10 @@ mod tests {
 
         write_sfbinpack_games(&path, &games);
 
-        let unique =
+        let (unique, total) =
             crate::unique::unique_positions_from_path(&path, None, crate::cli::Backend::Sfbinpack)
                 .unwrap();
-        assert_eq!(unique, 3);
+        assert_eq!((unique, total), (3, 6));
 
         let _ = std::fs::remove_file(path);
     }
@@ -260,10 +260,10 @@ mod tests {
 
         write_viriformat_games(&path, &games);
 
-        let unique =
+        let (unique, total) =
             crate::unique::unique_positions_from_path(&path, None, crate::cli::Backend::Viriformat)
                 .unwrap();
-        assert_eq!(unique, 3);
+        assert_eq!((unique, total), (3, 6));
 
         let _ = std::fs::remove_file(path);
     }
@@ -274,13 +274,13 @@ mod tests {
 
         write_sfbinpack_games(&path, &sample_games());
 
-        let unique = crate::unique::unique_positions_from_path(
+        let (unique, total) = crate::unique::unique_positions_from_path(
             &path,
             Some(2),
             crate::cli::Backend::Sfbinpack,
         )
         .unwrap();
-        assert_eq!(unique, 2);
+        assert_eq!((unique, total), (2, 2));
 
         let _ = std::fs::remove_file(path);
     }
